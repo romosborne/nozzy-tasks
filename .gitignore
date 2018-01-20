@@ -24,3 +24,6 @@ _testmain.go
 *.test
 *.prof
 
+debug
+.vscode/
+tasks.db
