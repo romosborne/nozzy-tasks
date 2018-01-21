@@ -52,3 +52,17 @@ func (db *DB) AllTasks() ([]*Task, error) {
 	}
 	return tasks, nil
 }
+
+func (db *DB) SingleTask(taskID int) (*Task, error) {
+	row := db.QueryRow(fmt.Sprintf("select id, title from tasks where id = %d", taskID))
+
+	task := new(Task)
+
+	err := row.Scan(&task.ID, &task.Title)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return task, nil
+}

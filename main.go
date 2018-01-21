@@ -18,6 +18,11 @@ type Env struct {
 	db models.Datastore
 }
 
+func (env *Env) allTasks(w http.ResponseWriter, r *http.Request) {
+	tasks, _ := env.db.AllTasks()
+	json.NewEncoder(w).Encode(tasks)
+}
+
 func main() {
 
 	db, err := models.NewDB(databaseName)
@@ -27,12 +32,7 @@ func main() {
 
 	env := &Env{db: db}
 
-	http.HandleFunc("/", env.allTasks)
+	router := NewRouter(env)
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func (env *Env) allTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, _ := env.db.AllTasks()
-	json.NewEncoder(w).Encode(tasks)
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
