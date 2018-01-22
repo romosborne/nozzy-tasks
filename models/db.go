@@ -9,7 +9,8 @@ import (
 type Datastore interface {
 	AllTasks() ([]*Task, error)
 	SingleTask(taskID int64) (*Task, error)
-	CreateTask(task *Task) error
+	AddUser(user *User)
+	CheckPassword(username string, password string) (bool, error)
 }
 
 type DB struct {
@@ -27,6 +28,11 @@ func NewDB(source string) (*DB, error) {
 	}
 
 	sqlStmt := `
+	create table if not exists users (
+		id integer primary key,
+		username text,
+		password text
+	);
 	create table if not exists projects (
 		id integer primary key,
 		name text);
@@ -43,6 +49,8 @@ func NewDB(source string) (*DB, error) {
 	}
 
 	myDb := DB{db}
+	//myDb.AddUser(&User{Username: "username", Password: "password"})
+	//myDb.AddStuff()
 
 	return &myDb, nil
 }
