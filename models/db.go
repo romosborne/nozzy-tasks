@@ -8,7 +8,8 @@ import (
 
 type Datastore interface {
 	AllTasks() ([]*Task, error)
-	SingleTask(taskID int) (*Task, error)
+	SingleTask(taskID int64) (*Task, error)
+	CreateTask(task *Task) error
 }
 
 type DB struct {
@@ -42,8 +43,6 @@ func NewDB(source string) (*DB, error) {
 	}
 
 	myDb := DB{db}
-
-	//myDb.AddStuff()
 
 	return &myDb, nil
 }

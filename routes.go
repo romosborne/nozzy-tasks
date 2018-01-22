@@ -32,4 +32,10 @@ var routes = Routes{
 		"/tasks/{taskId}",
 		TaskShow,
 	},
+	Route{
+		"TaskCreate",
+		"POST",
+		"/tasks",
+		TaskCreate,
+	},
 }
