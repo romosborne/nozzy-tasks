@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"nozzy-tasks/models"
 	"strconv"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
@@ -32,7 +33,7 @@ func Authenticate(env *Env) http.HandlerFunc {
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"username": user.Username,
-			"password": user.Password,
+			"exp":      time.Now().Add(time.Minute * time.Duration(30)).Format(time.RFC3339),
 		})
 		tokenString, error := token.SignedString([]byte("secret"))
 		if error != nil {
