@@ -8,7 +8,8 @@ import (
 
 type Datastore interface {
 	AllTasks() ([]*Task, error)
-	SingleTask(taskID int) (*Task, error)
+	SingleTask(taskID int64) (*Task, error)
+	CreateTask(task *Task) error
 	AddUser(user *User)
 	CheckPassword(username string, password string) (bool, error)
 }
