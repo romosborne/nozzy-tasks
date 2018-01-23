@@ -2,30 +2,50 @@ package main
 
 import (
 	"net/http"
+	"nozzy-tasks/models"
 )
 
 type Route struct {
-	Name          string
-	Method        string
-	Pattern       string
-	Authenticated bool
-	HandlerFunc   func(*Env) http.HandlerFunc
+	Name             string
+	Method           string
+	Pattern          string
+	ApiAuthenticated bool
+	WebAuthenticated bool
+	HandlerFunc      func(*models.Env) http.HandlerFunc
 }
 
 type Routes []Route
 
 var routes = Routes{
 	Route{
-		"Authenticate",
-		"POST",
-		"/authenticate",
+		"Login",
+		"GET",
+		"/login",
 		false,
-		Authenticate,
+		false,
+		WebLogin,
+	},
+	Route{
+		"Auth",
+		"GET",
+		"/auth",
+		false,
+		false,
+		WebAuth,
+	},
+	Route{
+		"Secure",
+		"GET",
+		"/secure",
+		false,
+		true,
+		WebSecure,
 	},
 	Route{
 		"Index",
 		"GET",
 		"/",
+		false,
 		false,
 		Index,
 	},
@@ -33,20 +53,24 @@ var routes = Routes{
 		"TaskIndex",
 		"GET",
 		"/tasks",
-		true,
+		false,
+		false,
 		TaskIndex,
 	},
 	Route{
 		"TaskShow",
 		"GET",
 		"/tasks/{taskId}",
-		true,
+		false,
+		false,
 		TaskShow,
 	},
 	Route{
 		"TaskCreate",
 		"POST",
 		"/tasks",
+		false,
+		false,
 		TaskCreate,
 	},
 }

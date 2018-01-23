@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
@@ -14,15 +13,6 @@ const (
 	databaseName = "./tasks.db"
 )
 
-type Env struct {
-	db models.Datastore
-}
-
-func (env *Env) allTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, _ := env.db.AllTasks()
-	json.NewEncoder(w).Encode(tasks)
-}
-
 func main() {
 
 	db, err := models.NewDB(databaseName)
@@ -30,7 +20,10 @@ func main() {
 		log.Panic(err)
 	}
 
-	env := &Env{db: db}
+	env := &models.Env{
+		Db:         db,
+		SessionKey: []byte(RandToken(64)),
+	}
 
 	router := NewRouter(env)
 
