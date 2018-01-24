@@ -11,11 +11,8 @@ import (
 	"log"
 	"net/http"
 	"nozzy-tasks/models"
-	"os"
 	"strconv"
-	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
@@ -23,8 +20,6 @@ import (
 )
 
 var (
-	cred  Credentials
-	conf  *oauth2.Config
 	store *sessions.CookieStore
 )
 
@@ -33,37 +28,17 @@ type viewBag struct {
 	Email string
 }
 
-type JwtToken struct {
-	Token string `json:"token"`
-}
-
-type Credentials struct {
-	Cid     string `json:"cid"`
-	Csecret string `json:"csecret"`
-}
-
 func RandToken(l int) string {
 	b := make([]byte, l)
 	rand.Read(b)
 	return base64.StdEncoding.EncodeToString(b)
 }
 
-func getLoginURL(state string) string {
-	return conf.AuthCodeURL(state)
-}
-
-func init() {
-	file, err := ioutil.ReadFile("./creds.json")
-	if err != nil {
-		fmt.Printf("File error: %v\n", err)
-		os.Exit(1)
-	}
-	json.Unmarshal(file, &cred)
-
-	conf = &oauth2.Config{
-		ClientID:     cred.Cid,
-		ClientSecret: cred.Csecret,
-		RedirectURL:  "http://127.0.0.1:8080/auth",
+func CreateOauthConf(env *models.Env) *oauth2.Config {
+	return &oauth2.Config{
+		ClientID:     env.OauthClientID,
+		ClientSecret: env.OauthClientSecret,
+		RedirectURL:  env.OauthRedirectUrl,
 		Scopes: []string{
 			"openid",
 			"email",
@@ -88,6 +63,8 @@ func WebAuth(env *models.Env) http.HandlerFunc {
 			http.Error(w, "Invalid session state", http.StatusUnauthorized)
 			return
 		}
+
+		conf := CreateOauthConf(env)
 
 		code := r.URL.Query()["code"][0]
 		tok, err := conf.Exchange(oauth2.NoContext, code)
@@ -134,7 +111,9 @@ func WebLogin(env *models.Env) http.HandlerFunc {
 		log.Printf("Stored session: %v\n", state)
 		session.Save(r, w)
 
-		link := getLoginURL(state)
+		conf := CreateOauthConf(env)
+
+		link := conf.AuthCodeURL(state)
 
 		t, err := template.ParseFiles("./templates/login.html")
 		if err != nil {
@@ -154,33 +133,6 @@ func WebSecure(env *models.Env) http.HandlerFunc {
 			fmt.Println(err)
 		}
 		t.Execute(w, &viewBag{Email: userId})
-	}
-}
-
-func Authenticate(env *models.Env) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var user models.User
-		_ = json.NewDecoder(r.Body).Decode(&user)
-
-		pass, err := env.Db.CheckPassword(user.Username, user.Password)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		if pass != true {
-			fmt.Fprint(w, "Invalid username or password")
-			return
-		}
-
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"username": user.Username,
-			"exp":      time.Now().Add(time.Minute * time.Duration(30)).Format(time.RFC3339),
-		})
-		tokenString, error := token.SignedString([]byte("secret"))
-		if error != nil {
-			fmt.Println(error)
-		}
-		json.NewEncoder(w).Encode(JwtToken{Token: tokenString})
 	}
 }
 

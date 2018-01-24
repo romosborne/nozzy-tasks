@@ -15,7 +15,7 @@ func NewRouter(env *models.Env) *mux.Router {
 		handler = route.HandlerFunc(env)
 
 		if route.ApiAuthenticated {
-			handler = middleware.ApiValidate(handler)
+			handler = middleware.ApiValidate(env, handler)
 		}
 
 		if route.WebAuthenticated {
