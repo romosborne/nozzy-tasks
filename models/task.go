@@ -1,55 +1,91 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 )
 
 type Task struct {
-	ID        int64    `json:"id"`
-	Title     string   `json:"title"`
-	Completed bool     `json:"completed"`
-	Project   *Project `json:"project"`
+	ID        int64  `json:"id"`
+	Title     string `json:"title"`
+	Completed bool   `json:"completed"`
+	ProjectId int64  `json:"project_id"`
 }
 
-func (db *DB) AllTasks() ([]*Task, error) {
-	rows, err := db.Query("select t.id, t.title, t.completed, p.id, p.name from tasks t left join projects p on t.project = p.id")
+type dbTask struct {
+	ID        sql.NullInt64
+	Title     sql.NullString
+	Completed sql.NullBool
+	ProjectId sql.NullInt64
+}
+
+func contains(slice []*Project, projectId int64) (bool, int) {
+	for index, value := range slice {
+		if value.ID == projectId {
+			return true, index
+		}
+	}
+
+	return false, 0
+}
+
+func (db *DB) AllTasks(userID string) ([]*Project, error) {
+	rows, err := db.Query(fmt.Sprintf("select t.id, t.title, t.completed, p.id, p.name from projects p left join tasks t on t.project = p.id where p.userId = '%s'", userID))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 
-	tasks := make([]*Task, 0)
+	projects := make([]*Project, 0)
 	for rows.Next() {
-		task := new(Task)
+		dbTask := new(dbTask)
 		project := new(Project)
-		err = rows.Scan(&task.ID, &task.Title, &task.Completed, &project.ID, &project.Name)
+		err = rows.Scan(&dbTask.ID, &dbTask.Title, &dbTask.Completed, &project.ID, &project.Name)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		task.Project = project
-		tasks = append(tasks, task)
+		if found, index := contains(projects, project.ID); found {
+			if dbTask.ID.Valid {
+				task := &Task{
+					ID:        dbTask.ID.Int64,
+					Title:     dbTask.Title.String,
+					Completed: dbTask.Completed.Bool,
+					ProjectId: project.ID,
+				}
+				projects[index].Tasks = append(projects[index].Tasks, task)
+			}
+		} else {
+			if dbTask.ID.Valid {
+				task := &Task{
+					ID:        dbTask.ID.Int64,
+					Title:     dbTask.Title.String,
+					Completed: dbTask.Completed.Bool,
+					ProjectId: project.ID,
+				}
+				project.Tasks = []*Task{task}
+			} else {
+				project.Tasks = make([]*Task, 0)
+			}
+			projects = append(projects, project)
+		}
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	return tasks, nil
+	return projects, nil
 }
 
-func (db *DB) SingleTask(taskID int64) (*Task, error) {
-	row := db.QueryRow(fmt.Sprintf("select t.id, t.title, t.completed, p.id, p.name from tasks t left join projects p on t.project = p.id where t.id = %d", taskID))
+func (db *DB) SingleTask(taskID int64, userID string) (*Task, error) {
+	row := db.QueryRow(fmt.Sprintf("select t.id, t.title, t.completed, t.project from tasks t left join projects p on t.project = p.id where t.id = %d and p.userId = '%s'", taskID, userID))
 
 	task := new(Task)
-	project := new(Project)
-	err := row.Scan(&task.ID, &task.Title, &task.Completed, &project.ID, &project.Name)
+	err := row.Scan(&task.ID, &task.Title, &task.Completed, &task.ProjectId)
 
 	if err != nil {
 		return nil, err
 	}
-
-	task.Project = project
-
 	return task, nil
 }
 
@@ -64,14 +100,7 @@ func (db *DB) CreateTask(task *Task) error {
 	}
 	defer stmt.Close()
 
-	var projectID string
-	if task.Project == nil {
-		projectID = "null"
-	} else {
-		projectID = string(task.Project.ID)
-	}
-
-	result, err := stmt.Exec(task.Title, projectID, task.Completed)
+	result, err := stmt.Exec(task.Title, task.ProjectId, task.Completed)
 	if err != nil {
 		log.Fatal(err)
 	}

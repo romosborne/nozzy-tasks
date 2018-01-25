@@ -144,15 +144,17 @@ func Index(_ *models.Env) http.HandlerFunc {
 
 func TaskIndex(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.Context().Value(env.ContextKey)
-		fmt.Fprintf(w, "%s", id)
-		tasks, _ := env.Db.AllTasks()
+		w.Header().Set("Content-type", "application/json; charset=UTF-8")
+		id := r.Context().Value(fmt.Sprintf("%s_id", env.ContextKey)).(string)
+		tasks, _ := env.Db.AllTasks(id)
 		json.NewEncoder(w).Encode(tasks)
 	}
 }
 
 func TaskShow(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "application/json; charset=UTF-8")
+
 		vars := mux.Vars(r)
 		taskID := vars["taskId"]
 		id, err := strconv.ParseInt(taskID, 10, 64)
@@ -160,7 +162,10 @@ func TaskShow(env *models.Env) http.HandlerFunc {
 			fmt.Fprint(w, err)
 			return
 		}
-		task, _ := env.Db.SingleTask(id)
+
+		userID := r.Context().Value(fmt.Sprintf("%s_id", env.ContextKey)).(string)
+
+		task, _ := env.Db.SingleTask(id, userID)
 		json.NewEncoder(w).Encode(task)
 	}
 }
@@ -194,6 +199,42 @@ func TaskCreate(env *models.Env) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(task); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func ProjectCreate(env *models.Env) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var project models.Project
+		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1024*1024))
+		if err != nil {
+			fmt.Fprint(w, err)
+			return
+		}
+		if err := r.Body.Close(); err != nil {
+			fmt.Fprint(w, err)
+			return
+		}
+		if err := json.Unmarshal(body, &project); err != nil {
+			w.Header().Set("Content-type", "application/json; charset=UTF-8")
+			w.WriteHeader(422)
+			if err := json.NewEncoder(w).Encode(err); err != nil {
+				panic(err)
+			}
+		}
+
+		project.UserID = r.Context().Value(fmt.Sprintf("%s_id", env.ContextKey)).(string)
+
+		err = env.Db.CreateProject(&project)
+		if err != nil {
+			fmt.Fprint(w, err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(project); err != nil {
 			panic(err)
 		}
 	}

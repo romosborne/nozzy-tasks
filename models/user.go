@@ -1,15 +1,13 @@
 package models
 
 import (
-	"fmt"
 	"log"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	ID    int64  `json:"id"`
+	Sub   string `json:"sub"`
+	Email string `json:"email"`
 }
 
 func (db *DB) AddUser(user *User) {
@@ -17,40 +15,24 @@ func (db *DB) AddUser(user *User) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("insert into users(username, password) values(?, ?)")
+	stmt, err := tx.Prepare("insert into users(sub, email) values(?, ?)")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	result, err := stmt.Exec(user.Sub, user.Email)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = stmt.Exec(user.Username, hash)
-
+	id, err := result.LastInsertId()
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	tx.Commit()
-}
 
-func (db *DB) CheckPassword(username string, password string) (bool, error) {
-	row := db.QueryRow(fmt.Sprintf("select password from users where username = %s", username))
-
-	var dBHash []byte
-	err := row.Scan(&dBHash)
-	if err != nil {
-		return false, err
-	}
-
-	err = bcrypt.CompareHashAndPassword(dBHash, []byte(password))
-
-	if err != nil {
-		return false, nil
-	}
-
-	return true, nil
+	user.ID = id
 }

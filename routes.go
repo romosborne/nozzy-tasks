@@ -9,7 +9,6 @@ type Route struct {
 	Name             string
 	Method           string
 	Pattern          string
-	ApiAuthenticated bool
 	WebAuthenticated bool
 	HandlerFunc      func(*models.Env) http.HandlerFunc
 }
@@ -22,7 +21,6 @@ var routes = Routes{
 		"GET",
 		"/login",
 		false,
-		false,
 		WebLogin,
 	},
 	Route{
@@ -30,14 +28,12 @@ var routes = Routes{
 		"GET",
 		"/auth",
 		false,
-		false,
 		WebAuth,
 	},
 	Route{
 		"Secure",
 		"GET",
 		"/secure",
-		false,
 		true,
 		WebSecure,
 	},
@@ -46,31 +42,34 @@ var routes = Routes{
 		"GET",
 		"/",
 		false,
-		false,
 		Index,
 	},
 	Route{
 		"TaskIndex",
 		"GET",
-		"/tasks",
-		true,
+		"/api/tasks",
 		false,
 		TaskIndex,
 	},
 	Route{
 		"TaskShow",
 		"GET",
-		"/tasks/{taskId}",
-		true,
+		"/api/tasks/{taskId}",
 		false,
 		TaskShow,
 	},
 	Route{
 		"TaskCreate",
 		"POST",
-		"/tasks",
-		true,
+		"/api/tasks",
 		false,
 		TaskCreate,
+	},
+	Route{
+		"ProjectCreate",
+		"POST",
+		"/api/project",
+		false,
+		ProjectCreate,
 	},
 }
