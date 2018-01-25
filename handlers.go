@@ -144,6 +144,8 @@ func Index(_ *models.Env) http.HandlerFunc {
 
 func TaskIndex(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.Context().Value(env.ContextKey)
+		fmt.Fprintf(w, "%s", id)
 		tasks, _ := env.Db.AllTasks()
 		json.NewEncoder(w).Encode(tasks)
 	}

@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -53,12 +53,10 @@ func ApiValidate(env *models.Env, next http.Handler) http.Handler {
 			}
 
 			claimSet, err := googleAuthIDTokenVerifier.Decode(jwt)
-			// claimSet.Iss,claimSet.Email ... (See claimset.go)
 
-			fmt.Println(claimSet)
-			//context.Set(req, "decoded", token.Claims)
+			ctx := context.WithValue(req.Context(), env.ContextKey, claimSet.Sub)
 
-			next.ServeHTTP(w, req)
+			next.ServeHTTP(w, req.WithContext(ctx))
 		}
 	})
 }
