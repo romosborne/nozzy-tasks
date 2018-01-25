@@ -3,9 +3,11 @@ package models
 import (
 	"database/sql"
 
+	// SQLite3 import
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Datastore interface methods
 type Datastore interface {
 	AllTasks(userID string) ([]*Project, error)
 	SingleTask(taskID int64, userID string) (*Task, error)
@@ -14,10 +16,12 @@ type Datastore interface {
 	AddUser(user *User)
 }
 
+// DB is a Custom DB for Datastore interface
 type DB struct {
 	*sql.DB
 }
 
+// NewDB initializes the DB
 func NewDB(source string) (*DB, error) {
 	db, err := sql.Open("sqlite3", source)
 	if err != nil {

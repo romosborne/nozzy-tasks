@@ -2,6 +2,7 @@ package models
 
 import "log"
 
+// Project is a collection of tasks
 type Project struct {
 	ID     int64   `json:"id"`
 	Name   string  `json:"name"`
@@ -9,6 +10,7 @@ type Project struct {
 	Tasks  []*Task `json:"tasks"`
 }
 
+// CreateProject create a project
 func (db *DB) CreateProject(project *Project) error {
 	tx, err := db.Begin()
 	if err != nil {

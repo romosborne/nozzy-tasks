@@ -1,5 +1,6 @@
 package models
 
+// GoogleUser contains all the information we get back from Google OAuth
 type GoogleUser struct {
 	Sub           string `json:"sub"`
 	Name          string `json:"name"`
