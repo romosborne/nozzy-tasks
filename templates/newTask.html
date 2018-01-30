@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="/css/main.css">
+    <title>New Task</title>
+  </head>
+  <body>
+        <h1>New Task</h1>
+        <form action="/newTask" method="POST">
+            Title: 
+            <input type="text" name="title">
+            Project:
+            <select name="projectId">
+                {{ range .Projects }}
+                    <option value={{.ID}}>{{.Name}}</option>
+                {{ end }}
+            </select>
+        </form>
+    </body>
+</html>

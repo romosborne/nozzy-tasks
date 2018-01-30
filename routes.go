@@ -5,6 +5,7 @@ import (
 	"nozzy-tasks/models"
 )
 
+// A Route is a http route
 type Route struct {
 	Name             string
 	Method           string
@@ -13,6 +14,7 @@ type Route struct {
 	HandlerFunc      func(*models.Env) http.HandlerFunc
 }
 
+// Routes is a collection os routes
 type Routes []Route
 
 var routes = Routes{
@@ -36,6 +38,41 @@ var routes = Routes{
 		"/secure",
 		true,
 		WebSecure,
+	},
+	Route{
+		"Tasks",
+		"GET",
+		"/tasks",
+		true,
+		WebTasks,
+	},
+	Route{
+		"NewProject",
+		"GET",
+		"/newProject",
+		true,
+		WebNewProject,
+	},
+	Route{
+		"NewProjectPost",
+		"POST",
+		"/newProject",
+		true,
+		WebNewProjectPost,
+	},
+	Route{
+		"NewTask",
+		"GET",
+		"/newTask",
+		true,
+		WebNewTask,
+	},
+	Route{
+		"NewTaskPost",
+		"POST",
+		"/newTask",
+		true,
+		WebNewTaskPost,
 	},
 	Route{
 		"Index",

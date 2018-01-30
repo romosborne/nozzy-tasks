@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="/css/main.css">
+    <title>Tasks</title>
+  </head>
+  <body>
+        <h1>Tasks</h1>
+        {{ range .Projects }}
+            <h3>{{ .Name }}</h3>
+            <ul>
+                {{ range .Tasks}}
+                    <li>{{ .Title }}</li>
+                {{ end }}
+            </ul>
+        {{ end }}
+  </body>
+</html>

@@ -28,17 +28,18 @@ type viewBag struct {
 	Email string
 }
 
+// RandToken returns a random string of length l
 func RandToken(l int) string {
 	b := make([]byte, l)
 	rand.Read(b)
 	return base64.StdEncoding.EncodeToString(b)
 }
 
-func CreateOauthConf(env *models.Env) *oauth2.Config {
+func createOauthConf(env *models.Env) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     env.OauthClientID,
 		ClientSecret: env.OauthClientSecret,
-		RedirectURL:  env.OauthRedirectUrl,
+		RedirectURL:  env.OauthRedirectURL,
 		Scopes: []string{
 			"openid",
 			"email",
@@ -47,6 +48,7 @@ func CreateOauthConf(env *models.Env) *oauth2.Config {
 	}
 }
 
+// WebAuth is the login call for the web interface
 func WebAuth(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		store := sessions.NewCookieStore(env.SessionKey)
@@ -64,7 +66,7 @@ func WebAuth(env *models.Env) http.HandlerFunc {
 			return
 		}
 
-		conf := CreateOauthConf(env)
+		conf := createOauthConf(env)
 
 		code := r.URL.Query()["code"][0]
 		tok, err := conf.Exchange(oauth2.NoContext, code)
@@ -96,11 +98,11 @@ func WebAuth(env *models.Env) http.HandlerFunc {
 
 		// Save or update user here
 
-		t, _ := template.ParseFiles("./templates/secure.html")
-		t.Execute(w, &viewBag{Email: u.Name})
+		http.Redirect(w, r, "/tasks", http.StatusFound)
 	}
 }
 
+// WebLogin is the login page for the web interface
 func WebLogin(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		store := sessions.NewCookieStore(env.SessionKey)
@@ -111,7 +113,7 @@ func WebLogin(env *models.Env) http.HandlerFunc {
 		log.Printf("Stored session: %v\n", state)
 		session.Save(r, w)
 
-		conf := CreateOauthConf(env)
+		conf := createOauthConf(env)
 
 		link := conf.AuthCodeURL(state)
 
@@ -123,25 +125,104 @@ func WebLogin(env *models.Env) http.HandlerFunc {
 	}
 }
 
+// WebTasks is the tasks view of the web interface
+func WebTasks(env *models.Env) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := getUserID(env, r)
+		projects, err := env.Db.AllTasks(userID)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		t, err := template.ParseFiles("./templates/tasks.html")
+		if err != nil {
+			fmt.Println(err)
+		}
+		t.Execute(w, &models.Overview{Projects: projects})
+	}
+}
+
+// WebNewTask will be gone soon
+func WebNewTask(env *models.Env) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := getUserID(env, r)
+		projects, err := env.Db.AllTasks(userID)
+		if err != nil {
+			fmt.Println(err)
+		}
+		t, err := template.ParseFiles("./templates/newTask.html")
+		if err != nil {
+			fmt.Println(err)
+		}
+		t.Execute(w, &models.Overview{Projects: projects})
+	}
+}
+
+// WebNewTaskPost will be gone soon
+func WebNewTaskPost(env *models.Env) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		title := r.FormValue("title")
+		projectID, _ := strconv.ParseInt(r.FormValue("projectId"), 10, 64)
+
+		task := models.Task{
+			Title:     title,
+			ProjectID: projectID,
+		}
+
+		env.Db.CreateTask(&task)
+
+		http.Redirect(w, r, "/tasks", http.StatusFound)
+	}
+}
+
+//WebNewProject will be gone soon
+func WebNewProject(env *models.Env) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t, err := template.ParseFiles("./templates/newProject.html")
+		if err != nil {
+			fmt.Println(err)
+		}
+		t.Execute(w, nil)
+	}
+}
+
+// WebNewProjectPost will be gone soon
+func WebNewProjectPost(env *models.Env) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := r.FormValue("name")
+
+		project := models.Project{
+			Name:   name,
+			UserID: getUserID(env, r),
+		}
+		env.Db.CreateProject(&project)
+
+		http.Redirect(w, r, "/tasks", http.StatusFound)
+	}
+}
+
+// WebSecure is a test
 func WebSecure(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		store := sessions.NewCookieStore(env.SessionKey)
 		session, _ := store.Get(r, "session-name")
-		userId := session.Values["user_id"].(string)
+		userID := session.Values["user_id"].(string)
 		t, err := template.ParseFiles("./templates/secure.html")
 		if err != nil {
 			fmt.Println(err)
 		}
-		t.Execute(w, &viewBag{Email: userId})
+		t.Execute(w, &viewBag{Email: userID})
 	}
 }
 
+// Index is the homepage of the web application
 func Index(_ *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Welcome!")
 	}
 }
 
+// TaskIndex returns all projects and tasks
 func TaskIndex(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json; charset=UTF-8")
@@ -151,6 +232,7 @@ func TaskIndex(env *models.Env) http.HandlerFunc {
 	}
 }
 
+// TaskShow returns a single task
 func TaskShow(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json; charset=UTF-8")
@@ -170,6 +252,7 @@ func TaskShow(env *models.Env) http.HandlerFunc {
 	}
 }
 
+// TaskCreate creates a task
 func TaskCreate(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var task models.Task
@@ -204,6 +287,7 @@ func TaskCreate(env *models.Env) http.HandlerFunc {
 	}
 }
 
+// ProjectCreate creates a project
 func ProjectCreate(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var project models.Project
@@ -238,4 +322,10 @@ func ProjectCreate(env *models.Env) http.HandlerFunc {
 			panic(err)
 		}
 	}
+}
+
+func getUserID(env *models.Env, r *http.Request) string {
+	store := sessions.NewCookieStore(env.SessionKey)
+	session, _ := store.Get(r, "session-name")
+	return session.Values["user_id"].(string)
 }
