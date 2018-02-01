@@ -6,7 +6,7 @@ import "log"
 type Project struct {
 	ID     int64   `json:"id"`
 	Name   string  `json:"name"`
-	UserID string  `json:"-"`
+	UserID int64   `json:"-"`
 	Tasks  []*Task `json:"tasks"`
 }
 

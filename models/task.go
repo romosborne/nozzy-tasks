@@ -32,8 +32,8 @@ func contains(slice []*Project, projectID int64) (bool, int) {
 }
 
 // AllTasks returns all the projects and tasks inside those projects
-func (db *DB) AllTasks(userID string) ([]*Project, error) {
-	rows, err := db.Query(fmt.Sprintf("select t.id, t.title, t.completed, p.id, p.name from projects p left join tasks t on t.project = p.id where p.userId = '%s'", userID))
+func (db *DB) AllTasks(userID int64) ([]*Project, error) {
+	rows, err := db.Query(fmt.Sprintf("select t.id, t.title, t.completed, p.id, p.name from projects p left join tasks t on t.project = p.id where p.userId = '%d'", userID))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,8 +80,8 @@ func (db *DB) AllTasks(userID string) ([]*Project, error) {
 }
 
 // SingleTask returns a single task
-func (db *DB) SingleTask(taskID int64, userID string) (*Task, error) {
-	row := db.QueryRow(fmt.Sprintf("select t.id, t.title, t.completed, t.project from tasks t left join projects p on t.project = p.id where t.id = %d and p.userId = '%s'", taskID, userID))
+func (db *DB) SingleTask(taskID int64, userID int64) (*Task, error) {
+	row := db.QueryRow(fmt.Sprintf("select t.id, t.title, t.completed, t.project from tasks t left join projects p on t.project = p.id where t.id = %d and p.userId = %d", taskID, userID))
 
 	task := new(Task)
 	err := row.Scan(&task.ID, &task.Title, &task.Completed, &task.ProjectID)

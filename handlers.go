@@ -12,6 +12,9 @@ import (
 	"net/http"
 	"nozzy-tasks/models"
 	"strconv"
+	"strings"
+
+	"github.com/futurenda/google-auth-id-token-verifier"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -45,6 +48,38 @@ func createOauthConf(env *models.Env) *oauth2.Config {
 			"email",
 		},
 		Endpoint: google.Endpoint,
+	}
+}
+
+// ApiAuth takes a google jwt, validates it, and returns a authtoken for the user
+func ApiAuth(env *models.Env) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authorizationHeader := r.Header.Get("authorization")
+		if authorizationHeader == "" {
+			json.NewEncoder(w).Encode(models.Exception{Message: "An authorization header is required"})
+			return
+		}
+		bearerToken := strings.Split(authorizationHeader, " ")
+		if len(bearerToken) == 2 {
+			jwt := bearerToken[1]
+
+			v := googleAuthIDTokenVerifier.Verifier{}
+			err := v.VerifyIDToken(jwt, []string{
+				env.OauthClientID,
+			})
+			if err != nil {
+				json.NewEncoder(w).Encode(models.Exception{Message: "Invalid authorization token"})
+				return
+			}
+
+			claimSet, err := googleAuthIDTokenVerifier.Decode(jwt)
+
+			authToken := RandToken(64)
+
+			env.Db.SetAuthToken(claimSet.Sub, claimSet.Email, authToken)
+
+			fmt.Fprintf(w, "%s", authToken)
+		}
 	}
 }
 
@@ -125,96 +160,6 @@ func WebLogin(env *models.Env) http.HandlerFunc {
 	}
 }
 
-// WebTasks is the tasks view of the web interface
-func WebTasks(env *models.Env) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		userID := getUserID(env, r)
-		projects, err := env.Db.AllTasks(userID)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		t, err := template.ParseFiles("./templates/tasks.html")
-		if err != nil {
-			fmt.Println(err)
-		}
-		t.Execute(w, &models.Overview{Projects: projects})
-	}
-}
-
-// WebNewTask will be gone soon
-func WebNewTask(env *models.Env) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		userID := getUserID(env, r)
-		projects, err := env.Db.AllTasks(userID)
-		if err != nil {
-			fmt.Println(err)
-		}
-		t, err := template.ParseFiles("./templates/newTask.html")
-		if err != nil {
-			fmt.Println(err)
-		}
-		t.Execute(w, &models.Overview{Projects: projects})
-	}
-}
-
-// WebNewTaskPost will be gone soon
-func WebNewTaskPost(env *models.Env) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		title := r.FormValue("title")
-		projectID, _ := strconv.ParseInt(r.FormValue("projectId"), 10, 64)
-
-		task := models.Task{
-			Title:     title,
-			ProjectID: projectID,
-		}
-
-		env.Db.CreateTask(&task)
-
-		http.Redirect(w, r, "/tasks", http.StatusFound)
-	}
-}
-
-//WebNewProject will be gone soon
-func WebNewProject(env *models.Env) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		t, err := template.ParseFiles("./templates/newProject.html")
-		if err != nil {
-			fmt.Println(err)
-		}
-		t.Execute(w, nil)
-	}
-}
-
-// WebNewProjectPost will be gone soon
-func WebNewProjectPost(env *models.Env) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		name := r.FormValue("name")
-
-		project := models.Project{
-			Name:   name,
-			UserID: getUserID(env, r),
-		}
-		env.Db.CreateProject(&project)
-
-		http.Redirect(w, r, "/tasks", http.StatusFound)
-	}
-}
-
-// WebSecure is a test
-func WebSecure(env *models.Env) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		store := sessions.NewCookieStore(env.SessionKey)
-		session, _ := store.Get(r, "session-name")
-		userID := session.Values["user_id"].(string)
-		t, err := template.ParseFiles("./templates/secure.html")
-		if err != nil {
-			fmt.Println(err)
-		}
-		t.Execute(w, &viewBag{Email: userID})
-	}
-}
-
 // Index is the homepage of the web application
 func Index(_ *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -222,12 +167,23 @@ func Index(_ *models.Env) http.HandlerFunc {
 	}
 }
 
+func Web(_ *models.Env) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		content, err := ioutil.ReadFile("./static/web.html")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		w.Write(content)
+	}
+}
+
 // TaskIndex returns all projects and tasks
 func TaskIndex(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json; charset=UTF-8")
-		id := r.Context().Value(fmt.Sprintf("%s_id", env.ContextKey)).(string)
-		tasks, _ := env.Db.AllTasks(id)
+		user := getUser(env, r)
+		tasks, _ := env.Db.AllTasks(user.ID)
 		json.NewEncoder(w).Encode(tasks)
 	}
 }
@@ -245,7 +201,7 @@ func TaskShow(env *models.Env) http.HandlerFunc {
 			return
 		}
 
-		userID := r.Context().Value(fmt.Sprintf("%s_id", env.ContextKey)).(string)
+		userID := getUser(env, r).ID
 
 		task, _ := env.Db.SingleTask(id, userID)
 		json.NewEncoder(w).Encode(task)
@@ -308,7 +264,7 @@ func ProjectCreate(env *models.Env) http.HandlerFunc {
 			}
 		}
 
-		project.UserID = r.Context().Value(fmt.Sprintf("%s_id", env.ContextKey)).(string)
+		project.UserID = getUser(env, r).ID
 
 		err = env.Db.CreateProject(&project)
 		if err != nil {
@@ -324,8 +280,6 @@ func ProjectCreate(env *models.Env) http.HandlerFunc {
 	}
 }
 
-func getUserID(env *models.Env, r *http.Request) string {
-	store := sessions.NewCookieStore(env.SessionKey)
-	session, _ := store.Get(r, "session-name")
-	return session.Values["user_id"].(string)
+func getUser(env *models.Env, r *http.Request) *models.User {
+	return r.Context().Value(env.ContextKey).(*models.User)
 }

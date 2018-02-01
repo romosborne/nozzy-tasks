@@ -9,11 +9,13 @@ import (
 
 // Datastore interface methods
 type Datastore interface {
-	AllTasks(userID string) ([]*Project, error)
-	SingleTask(taskID int64, userID string) (*Task, error)
+	AllTasks(userID int64) ([]*Project, error)
+	SingleTask(taskID int64, userID int64) (*Task, error)
 	CreateTask(task *Task) error
 	CreateProject(project *Project) error
 	AddUser(user *User)
+	SetAuthToken(sub string, email string, authToken string)
+	GetUserFromAuthToken(authToken string) (*User, error)
 }
 
 // DB is a Custom DB for Datastore interface
@@ -36,7 +38,8 @@ func NewDB(source string) (*DB, error) {
 	create table if not exists users (
 		id integer primary key,
 		sub text,
-		email text
+		email text,
+		authToken text
 	);
 	create table if not exists projects (
 		id integer primary key,
