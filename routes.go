@@ -18,18 +18,6 @@ type Routes []Route
 
 var routes = Routes{
 	Route{
-		"Login",
-		"GET",
-		"/login",
-		WebLogin,
-	},
-	Route{
-		"Auth",
-		"GET",
-		"/auth",
-		WebAuth,
-	},
-	Route{
 		"Web",
 		"GET",
 		"/",

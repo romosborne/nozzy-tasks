@@ -14,6 +14,12 @@ type Task struct {
 	ProjectID int64  `json:"project_id"`
 }
 
+type TaskRequest struct {
+	Title          string `json:"title"`
+	ProjectID      int64  `json:"project_id"`
+	NewProjectName string `json:"new_project_name"`
+}
+
 type dbTask struct {
 	ID        sql.NullInt64
 	Title     sql.NullString

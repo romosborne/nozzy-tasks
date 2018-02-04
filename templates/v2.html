@@ -1,0 +1,36 @@
+<html>
+<head>
+<meta name="google-signin-client_id" content="606629875545-4qeblo1g4lbofmfs2vp6e5eodk2p1laa.apps.googleusercontent.com" />
+<script src="https://apis.google.com/js/platform.js?onload=init" async defer>    </script>
+</head>
+<body>
+<div class="g-signin2" data-onsuccess="onSignIn"></div>
+<script type="text/javascript">
+    function init(){
+        // gapi.load('auth2', function() { 
+        //     auth2 = gapi.auth2.init({
+        //         client_id: '606629875545-4qeblo1g4lbofmfs2vp6e5eodk2p1laa.apps.googleusercontent.com',
+        //         fetch_basic_profile: false,
+        //         scope: 'profile'
+        //     });
+
+        //     // Sign the user in, and then retrieve their ID.
+        //     auth2.signIn().then(function() {
+        //         console.log(auth2.currentUser.get().getId());
+        //     });
+        // });
+    }
+
+    function onSignIn(googleUser) {
+        var profile = googleUser.getBasicProfile();
+        console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
+        console.log('Name: ' + profile.getName());
+        console.log('Image URL: ' + profile.getImageUrl());
+        console.log('Email: ' + profile.getEmail()); // This is null if the 'email' scope is not present.
+        var id_token = googleUser.getAuthResponse().id_token;
+        console.log("ID Token: " + id_token);
+    }
+</script>
+
+</body>
+</html>

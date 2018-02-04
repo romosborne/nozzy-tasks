@@ -1,0 +1,46 @@
+<html>
+<head>
+<meta name="google-signin-client_id" content="606629875545-4qeblo1g4lbofmfs2vp6e5eodk2p1laa.apps.googleusercontent.com" />
+<script src="/static/jquery-3.3.1.min.js"/>
+<script src="/static/knockout-3.4.2.js"/>
+<script src="https://apis.google.com/js/platform.js?onload=init" async defer>    </script>
+
+</head>
+<body>
+<div class="g-signin2" data-onsuccess="onSignIn"></div>
+<script type="text/javascript">
+    function init(){
+    }
+
+    function onSignIn(googleUser) {
+        var profile = googleUser.getBasicProfile();
+        console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
+        console.log('Name: ' + profile.getName());
+        console.log('Image URL: ' + profile.getImageUrl());
+        console.log('Email: ' + profile.getEmail()); // This is null if the 'email' scope is not present.
+        var id_token = googleUser.getAuthResponse().id_token;
+        console.log("ID Token: " + id_token);
+
+        $.ajax('/get_token', {
+            headers: {'Authorization': 'Bearer: ' + id_token},
+            success: new function(data){
+                alert(data);
+            }
+        })
+    }
+
+    function ProjectsViewModel(){
+        var self = this;
+
+        self.projects = ko.observableArray([])
+
+        function SetData(data){
+            self.projects = data;
+        }
+    }
+
+    ko.applyBindings(new ProjectsViewModel());
+</script>
+
+</body>
+</html>

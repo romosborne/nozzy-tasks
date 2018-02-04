@@ -1,0 +1,66 @@
+<html>
+<head>
+<meta name="google-signin-client_id" content="606629875545-4qeblo1g4lbofmfs2vp6e5eodk2p1laa.apps.googleusercontent.com" />
+<script src="https://smartlock.google.com/client"></script>
+</head>
+<body>
+<script type="text/javascript">
+    window.onGoogleYoloLoad = (googleyolo) => {
+        
+        const retrievePromise = googleyolo.retrieve({
+            supportedAuthMethods: [
+                "https://accounts.google.com",
+                "googleyolo://id-and-password"
+            ],
+            supportedIdTokenProviders: [
+                {
+                uri: "https://accounts.google.com",
+                clientId: "606629875545-j5e053fkikrmgls4gaum2mpg9nu7uojm.apps.googleusercontent.com"
+                }
+            ]
+        });
+
+
+
+        retrievePromise.then((credential) => {
+            console.log("Starting retreive");
+            if (credential.password) {
+                // An ID (usually email address) and password credential was retrieved.
+                // Sign in to your backend using the password.
+                signInWithEmailAndPassword(credential.id, credential.password);
+            } else {
+                // A Google Account is retrieved. Since Google supports ID token responses,
+                // you can use the token to sign in instead of initiating the Google sign-in
+                // flow.
+                console.log(credential.idToken);
+            }
+            }, (error) => {
+                if (error.type === 'noCredentialsAvailable') {
+                    console.log("No credentials available");
+                    googleyolo.hint({
+                        supportedAuthMethods: [
+                            "https://accounts.google.com"
+                        ],
+                        supportedIdTokenProviders: [
+                            {
+                            uri: "https://accounts.google.com",
+                            clientId: "606629875545-j5e053fkikrmgls4gaum2mpg9nu7uojm.apps.googleusercontent.com"
+                            }
+                        ]
+                    }).then((credential) => {
+                        console.log("Starting hint");
+                        
+                        if (credential.idToken) {
+                            // Send the token to your auth backend.
+                            console.log(credential.idToken);
+                        }
+                    }, (error) => {
+                        console.log("Some other error");
+                    });
+                }
+            });
+    }
+</script>
+
+</body>
+</html>
