@@ -71,7 +71,7 @@ func ApiAuth(env *models.Env) http.HandlerFunc {
 
 			authToken := RandToken(64)
 
-			env.Db.SetAuthToken(claimSet.Sub, claimSet.Email, authToken)
+			env.Db.CreateOrSetAuthToken(claimSet.Sub, claimSet.Email, authToken)
 
 			fmt.Fprintf(w, "%s", authToken)
 		}

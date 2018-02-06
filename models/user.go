@@ -41,8 +41,20 @@ func (db *DB) AddUser(user *User) {
 	user.ID = id
 }
 
-// SetAuthToken sets the auth token of a user
-func (db *DB) SetAuthToken(sub string, email string, authToken string) {
+// CreateOrSetAuthToken sets the auth token of a user or creates a new user if none is found
+func (db *DB) CreateOrSetAuthToken(sub string, email string, authToken string) {
+	var count int
+	_ = db.QueryRow("select count(*) from users where sub = ?", sub).Scan(&count)
+
+	if count == 0 {
+		// Create new user
+		db.AddUser(&User{
+			Sub:       sub,
+			Email:     email,
+			AuthToken: authToken})
+		return
+	}
+
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)

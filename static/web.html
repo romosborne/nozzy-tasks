@@ -31,14 +31,16 @@
         </div>
     </div>
 
-    <h2>Tasks</h2>
+    <h2>Projects</h2>
 
     <div data-bind="foreach: projects">
-        <div>
-            <strong data-bind="text: name"></strong>
-        </div>
-        <div style="margin-left:20px" data-bind="foreach: tasks">
-            <div data-bind="text: title"></div>
+        <div class="card">
+            <div class="card-block">
+                <h4 class="card-title" data-bind="text: name"></h4>
+            </div>
+            <ul class="list-group list-group-flush" data-bind="foreach: tasks">
+                <li class="list-group-item" data-bind="text: title"></li>
+            </ul>
         </div>
     </div>
 

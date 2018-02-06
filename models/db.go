@@ -14,7 +14,7 @@ type Datastore interface {
 	CreateTask(task *Task) error
 	CreateProject(project *Project) error
 	AddUser(user *User)
-	SetAuthToken(sub string, email string, authToken string)
+	CreateOrSetAuthToken(sub string, email string, authToken string)
 	GetUserFromAuthToken(authToken string) (*User, error)
 }
 
