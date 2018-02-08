@@ -24,9 +24,9 @@
                     <input id="newTaskFormName" type="text" placeholder="Task name">
                 </div>
                 <div>
-                    <input id="newTaskProjectName" type="text" class="typeahead" data-provide="typeahead">
+                    <input id="newTaskProjectName" type="text" class="typeahead" data-provide="typeahead" autocomplete="off">
                 </div>
-                <button type="submit" class="btn btn-primary">Create</button>
+                <button data-bind="click: addTask" class="btn btn-primary">Create</button>
             </form>
         </div>
     </div>
@@ -77,7 +77,12 @@
                     savedAuthKey = authKey;
                     LoadProjects().done(function (projects) {
                         console.log(projects);
-                        var viewModel = new ProjectsViewModel(projects);
+
+                        proj = $.map(projects, function (p) {
+                            return new Project(p.id, p.name, p.tasks)
+                        });
+
+                        var viewModel = new ProjectsViewModel(proj);
                         ko.applyBindings(viewModel);
 
                         $(".typeahead").typeahead({
@@ -112,8 +117,24 @@
                     // Nothing is active so it is a new value (or maybe empty value)
                 }
             });
+        });
 
-            $("#newTaskForm").on('submit', function (e) {
+        var Project = function (id, name, tasks) {
+            this.id = id;
+            this.name = name;
+            this.tasks = ko.observableArray(tasks);
+
+            this.addTask = function (task) {
+                this.tasks.push(task);
+            };//.bind(this);
+        }
+
+        function ProjectsViewModel(projects) {
+            var self = this;
+
+            self.projects = ko.observableArray(projects);
+
+            self.addTask = function () {
                 console.log("Sending request");
 
                 // Create request
@@ -121,6 +142,7 @@
                     "title": $("#newTaskFormName").val()
                 };
 
+                var $input = $(".typeahead");
                 var current = $input.typeahead("getActive");
                 if (current) {
                     request.project_id = current.id;
@@ -134,19 +156,14 @@
                     headers: { 'Authorization': 'Bearer: ' + savedAuthKey },
                     data: JSON.stringify(request),
                     success: function (response) {
+                        var result = ko.utils.arrayFirst(self.projects(), function (e) {
+                            return e.id == request.project_id;
+                        });
+                        result.addTask(response);
                         console.log(response);
                     }
                 });
-
-                //stop form submission
-                e.preventDefault();
-            });
-        });
-
-        function ProjectsViewModel(projects) {
-            var self = this;
-
-            self.projects = ko.observableArray(projects);
+            }.bind(self);
         }
     </script>
 </body>
