@@ -48,6 +48,12 @@ var routes = Routes{
 		TaskCreate,
 	},
 	Route{
+		"TaskCompletion",
+		"POST",
+		"/api/tasks/completion",
+		TaskComplete,
+	},
+	Route{
 		"ProjectCreate",
 		"POST",
 		"/api/project",

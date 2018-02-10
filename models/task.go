@@ -20,6 +20,11 @@ type TaskRequest struct {
 	NewProjectName string `json:"new_project_name"`
 }
 
+type TaskCompletionRequest struct {
+	TaskID    int64 `json:"task_id"`
+	Completed bool  `json:"completed"`
+}
+
 type dbTask struct {
 	ID        sql.NullInt64
 	Title     sql.NullString
@@ -87,7 +92,7 @@ func (db *DB) AllTasks(userID int64) ([]*Project, error) {
 
 // SingleTask returns a single task
 func (db *DB) SingleTask(taskID int64, userID int64) (*Task, error) {
-	row := db.QueryRow(fmt.Sprintf("select t.id, t.title, t.completed, t.project from tasks t left join projects p on t.project = p.id where t.id = %d and p.userId = %d", taskID, userID))
+	row := db.QueryRow("select t.id, t.title, t.completed, t.project from tasks t left join projects p on t.project = p.id where t.id = ? and p.userId = ?", taskID, userID)
 
 	task := new(Task)
 	err := row.Scan(&task.ID, &task.Title, &task.Completed, &task.ProjectID)
@@ -96,6 +101,22 @@ func (db *DB) SingleTask(taskID int64, userID int64) (*Task, error) {
 		return nil, err
 	}
 	return task, nil
+}
+
+func (db *DB) SetTaskCompletion(userID int64, taskID int64, complete bool) error {
+
+	stmt := `update tasks set completed = ? 
+	where exists (
+		select t.id from tasks t
+		join projects p on p.id = t.project
+		where t.id = ?
+		and p.userId = ?)
+	and id = ?`
+
+	db.Prepare(stmt)
+	_, err := db.Exec(stmt, complete, taskID, userID, taskID)
+
+	return err
 }
 
 // CreateTask creates a task

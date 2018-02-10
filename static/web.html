@@ -39,7 +39,12 @@
                 <h4 class="card-title" data-bind="text: name"></h4>
             </div>
             <ul class="list-group list-group-flush" data-bind="foreach: tasks">
-                <li class="list-group-item" data-bind="text: title"></li>
+                <li class="list-group-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" data-bind="checked: completed, click: toggleComplete">
+                        <label class="form-check-label" data-bind="text: title"> </label>
+                    </div>
+                </li>
             </ul>
         </div>
     </div>
@@ -65,7 +70,6 @@
             return projects.promise();
         }
 
-
         function onSignIn(googleUser) {
             var id_token = googleUser.getAuthResponse().id_token;
             console.log("ID Token: " + id_token);
@@ -79,7 +83,10 @@
                         console.log(projects);
 
                         proj = $.map(projects, function (p) {
-                            return new Project(p.id, p.name, p.tasks)
+                            tasks = $.map(p.tasks, function (t) {
+                                return new Task(t.id, t.title, t.completed)
+                            })
+                            return new Project(p.id, p.name, tasks)
                         });
 
                         var viewModel = new ProjectsViewModel(proj);
@@ -95,29 +102,26 @@
             });
         }
 
-        $(function () {
+        var Task = function (id, title, completed) {
+            this.id = id;
+            this.title = title;
+            this.completed = ko.observable(completed)
 
-            var $input = $(".typeahead");
-
-            $input.change(function () {
-                var current = $input.typeahead("getActive");
-                if (current) {
-                    // Some item from your model is active!
-                    if (current.name == $input.val()) {
-                        // This means the exact match is found. Use toLowerCase() if you want case insensitive match.
-                        console.log("Complete match: " + current.name);
-                        console.log("Complete match: " + current.id);
-                    } else {
-                        // This means it is only a partial match, you can either add a new item
-                        // or take the active if you don't want new items
-                        console.log("Partial match: " + current.name);
-                    }
-                } else {
-                    console.log("No match");
-                    // Nothing is active so it is a new value (or maybe empty value)
+            this.toggleComplete = function () {
+                let request = {
+                    "task_id": this.id,
+                    "completed": this.completed()
                 }
-            });
-        });
+
+                $.ajax({
+                    url: '/api/tasks/completion',
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer: ' + savedAuthKey },
+                    data: JSON.stringify(request)
+                });
+                return true;
+            }
+        }
 
         var Project = function (id, name, tasks) {
             this.id = id;
@@ -126,7 +130,7 @@
 
             this.addTask = function (task) {
                 this.tasks.push(task);
-            };//.bind(this);
+            };
         }
 
         function ProjectsViewModel(projects) {
