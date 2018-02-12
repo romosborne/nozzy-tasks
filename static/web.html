@@ -1,7 +1,7 @@
 <html>
 
 <head>
-    <meta name="google-signin-client_id" content="606629875545-4qeblo1g4lbofmfs2vp6e5eodk2p1laa.apps.googleusercontent.com" />
+    <meta name="google-signin-client_id" content="{{ .OauthClientID }}" />
     <script src="/static/js/jquery-3.3.1.min.js"></script>
     <script src="/static/js/knockout-3.4.2.js"></script>
     <script src="https://apis.google.com/js/platform.js?onload=init" async defer></script>
@@ -14,46 +14,60 @@
 <body>
     <div class="g-signin2" data-onsuccess="onSignIn"></div>
 
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <h3 class="panel-title">New Task</h3>
-        </div>
-        <div class="panel-body">
-            <form id="newTaskForm">
-                <div>
-                    <input id="newTaskFormName" type="text" placeholder="Task name">
-                </div>
-                <div>
-                    <input id="newTaskProjectName" type="text" class="typeahead" data-provide="typeahead" autocomplete="off">
-                </div>
-                <button data-bind="click: addTask" class="btn btn-primary">Create</button>
-            </form>
-        </div>
-    </div>
+    <div>
+        <h2>Projects</h2>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8 col-offset-md-2">
+                    <div data-bind="foreach: projects">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h3 class="panel-title" data-bind="text: name"></h3>
+                            </div>
+                            <div class="panel-body">
+                                <ul class="list-group list-group-flush">
+                                    <div data-bind="foreach: tasks">
+                                        <li class="list-group-item">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" data-bind="checked: completed, click: toggleComplete">
+                                                <label class="form-check-label" data-bind="text: title"> </label>
+                                            </div>
+                                        </li>
+                                    </div>
 
-    <h2>Projects</h2>
-
-    <div data-bind="foreach: projects">
-        <div class="card">
-            <div class="card-block">
-                <h4 class="card-title" data-bind="text: name"></h4>
-            </div>
-            <ul class="list-group list-group-flush" data-bind="foreach: tasks">
-                <li class="list-group-item">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" data-bind="checked: completed, click: toggleComplete">
-                        <label class="form-check-label" data-bind="text: title"> </label>
+                                    <li class="list-group-item">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" placeholder="New task..." data-bind="value: newTaskName">
+                                            <span class="input-group-btn">
+                                                <button class="btn btn-default" type="button" data-bind="click: addTaskInline">Add</button>
+                                            </span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                </li>
-            </ul>
+                    <div>
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="New project..." data-bind="value: newProjectName">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button" data-bind="click: addProject">Add</button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+
 
     <script type="text/javascript">
         function init() {
         }
 
         var savedAuthKey = "";
+        var viewModel;
 
         function LoadProjects() {
             var projects = $.Deferred();
@@ -81,7 +95,6 @@
                     savedAuthKey = authKey;
                     LoadProjects().done(function (projects) {
                         console.log(projects);
-
                         proj = $.map(projects, function (p) {
                             tasks = $.map(p.tasks, function (t) {
                                 return new Task(t.id, t.title, t.completed)
@@ -89,28 +102,29 @@
                             return new Project(p.id, p.name, tasks)
                         });
 
-                        var viewModel = new ProjectsViewModel(proj);
-                        ko.applyBindings(viewModel);
-
-                        $(".typeahead").typeahead({
-                            source: projects,
-                            minLength: 0,
-                            autoSelect: true
+                        $.each(proj, function (i, v) {
+                            viewModel.addExistingProject(v);
                         });
                     });
                 }
             });
         }
 
-        var Task = function (id, title, completed) {
-            this.id = id;
-            this.title = title;
-            this.completed = ko.observable(completed)
+        $(function () {
+            viewModel = new ProjectsViewModel();
+            ko.applyBindings(viewModel);
+        })
 
-            this.toggleComplete = function () {
+        var Task = function (id, title, completed) {
+            var self = this;
+            self.id = id;
+            self.title = title;
+            self.completed = ko.observable(completed)
+
+            self.toggleComplete = function () {
                 let request = {
-                    "task_id": this.id,
-                    "completed": this.completed()
+                    "task_id": self.id,
+                    "completed": self.completed()
                 }
 
                 $.ajax({
@@ -124,34 +138,20 @@
         }
 
         var Project = function (id, name, tasks) {
-            this.id = id;
-            this.name = name;
-            this.tasks = ko.observableArray(tasks);
-
-            this.addTask = function (task) {
-                this.tasks.push(task);
-            };
-        }
-
-        function ProjectsViewModel(projects) {
             var self = this;
+            self.id = id;
+            self.name = name;
+            self.newTaskName = "";
+            self.tasks = ko.observableArray(tasks);
 
-            self.projects = ko.observableArray(projects);
+            self.addTask = function (task) {
+                self.tasks.push(task);
+            };
 
-            self.addTask = function () {
-                console.log("Sending request");
-
-                // Create request
+            self.addTaskInline = function () {
                 var request = {
-                    "title": $("#newTaskFormName").val()
-                };
-
-                var $input = $(".typeahead");
-                var current = $input.typeahead("getActive");
-                if (current) {
-                    request.project_id = current.id;
-                } else {
-                    request.new_project_name = $input.val();
+                    "title": self.newTaskName,
+                    "project_id": self.id
                 }
 
                 $.ajax({
@@ -160,14 +160,37 @@
                     headers: { 'Authorization': 'Bearer: ' + savedAuthKey },
                     data: JSON.stringify(request),
                     success: function (response) {
-                        var result = ko.utils.arrayFirst(self.projects(), function (e) {
-                            return e.id == request.project_id;
-                        });
-                        result.addTask(response);
-                        console.log(response);
+                        self.tasks.push(new Task(response.id, response.title, false));
+                        self.newTaskName = "";
                     }
                 });
-            }.bind(self);
+            }
+        }
+
+        function ProjectsViewModel(projects) {
+            var self = this;
+
+            self.projects = ko.observableArray(projects);
+            self.newProjectName = ko.observable("")
+
+            self.addProject = function () {
+                var request = { "name": self.newProjectName };
+                $.ajax({
+                    url: '/api/project',
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer: ' + savedAuthKey },
+                    data: JSON.stringify(request),
+                    success: function (response) {
+                        console.log(response);
+                        self.projects.push(new Project(response.id, response.name, []));
+                        self.newProjectName = "";
+                    }
+                });
+            }
+
+            self.addExistingProject = function (project) {
+                self.projects.push(project);
+            }
         }
     </script>
 </body>

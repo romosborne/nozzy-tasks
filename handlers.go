@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -36,14 +37,14 @@ func RandToken(l int) string {
 }
 
 // Web returns the web interface
-func Web(_ *models.Env) http.HandlerFunc {
+func Web(env *models.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		content, err := ioutil.ReadFile("./static/web.html")
+		t, err := template.ParseFiles("./static/web.html")
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		w.Write(content)
+		t.Execute(w, env)
 	}
 }
 
