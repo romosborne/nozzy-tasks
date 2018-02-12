@@ -2,7 +2,8 @@ package main
 
 import (
 	"net/http"
-	"nozzy-tasks/models"
+
+	"github.com/romosborne/nozzy-tasks/models"
 )
 
 // A Route is a http route

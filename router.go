@@ -2,9 +2,10 @@ package main
 
 import (
 	"net/http"
-	"nozzy-tasks/middleware"
-	"nozzy-tasks/models"
 	"strings"
+
+	"github.com/romosborne/nozzy-tasks/middleware"
+	"github.com/romosborne/nozzy-tasks/models"
 
 	"github.com/gorilla/mux"
 )

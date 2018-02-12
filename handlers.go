@@ -8,9 +8,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"nozzy-tasks/models"
 	"strconv"
 	"strings"
+
+	"github.com/romosborne/nozzy-tasks/models"
 
 	"github.com/futurenda/google-auth-id-token-verifier"
 

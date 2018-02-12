@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"nozzy-tasks/models"
+	"github.com/romosborne/nozzy-tasks/models"
 )
 
 // APIValidate validates incoming calls to the api and populates the user object in the context

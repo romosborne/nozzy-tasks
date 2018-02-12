@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"nozzy-tasks/models"
+	"github.com/romosborne/nozzy-tasks/models"
 
 	_ "github.com/mattn/go-sqlite3"
 )
