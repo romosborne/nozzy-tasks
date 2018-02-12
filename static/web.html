@@ -141,7 +141,7 @@
             var self = this;
             self.id = id;
             self.name = name;
-            self.newTaskName = "";
+            self.newTaskName = ko.observable("");
             self.tasks = ko.observableArray(tasks);
 
             self.addTask = function (task) {
@@ -150,7 +150,7 @@
 
             self.addTaskInline = function () {
                 var request = {
-                    "title": self.newTaskName,
+                    "title": self.newTaskName(),
                     "project_id": self.id
                 }
 
@@ -161,7 +161,7 @@
                     data: JSON.stringify(request),
                     success: function (response) {
                         self.tasks.push(new Task(response.id, response.title, false));
-                        self.newTaskName = "";
+                        self.newTaskName("");
                     }
                 });
             }
@@ -174,7 +174,8 @@
             self.newProjectName = ko.observable("")
 
             self.addProject = function () {
-                var request = { "name": self.newProjectName };
+                var request = { "name": self.newProjectName() };
+                console.log(request);
                 $.ajax({
                     url: '/api/project',
                     method: 'POST',
@@ -183,7 +184,7 @@
                     success: function (response) {
                         console.log(response);
                         self.projects.push(new Project(response.id, response.name, []));
-                        self.newProjectName = "";
+                        self.newProjectName("");
                     }
                 });
             }
