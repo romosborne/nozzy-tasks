@@ -37,7 +37,7 @@
 
                                     <li class="list-group-item">
                                         <div class="input-group">
-                                            <input type="text" class="form-control" placeholder="New task..." data-bind="value: newTaskName">
+                                            <input type="text" class="form-control" placeholder="New task..." data-bind="textInput: newTaskName, event: {keypress: enterAdd}">
                                             <span class="input-group-btn">
                                                 <button class="btn btn-default" type="button" data-bind="click: addTaskInline">Add</button>
                                             </span>
@@ -49,7 +49,7 @@
                     </div>
                     <div>
                         <div class="input-group">
-                            <input type="text" class="form-control" placeholder="New project..." data-bind="value: newProjectName">
+                            <input type="text" class="form-control" placeholder="New project..." data-bind="textInput: newProjectName, event: {keypress: enterAdd}">
                             <span class="input-group-btn">
                                 <button class="btn btn-default" type="button" data-bind="click: addProject">Add</button>
                             </span>
@@ -144,6 +144,11 @@
             self.newTaskName = ko.observable("");
             self.tasks = ko.observableArray(tasks);
 
+            self.enterAdd = function (d, e) {
+                e.keyCode === 13 && self.addTaskInline();
+                return true;
+            };
+
             self.addTask = function (task) {
                 self.tasks.push(task);
             };
@@ -172,6 +177,11 @@
 
             self.projects = ko.observableArray(projects);
             self.newProjectName = ko.observable("")
+
+            self.enterAdd = function (d, e) {
+                e.keyCode === 13 && self.addProject();
+                return true;
+            };
 
             self.addProject = function () {
                 var request = { "name": self.newProjectName() };
