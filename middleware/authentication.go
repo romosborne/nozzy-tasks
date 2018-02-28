@@ -7,10 +7,13 @@ import (
 	"strings"
 
 	"github.com/romosborne/nozzy-tasks/models"
+	"github.com/romosborne/nozzy-tasks/services"
 )
 
+const UserContextKey = "userContext"
+
 // APIValidate validates incoming calls to the api and populates the user object in the context
-func APIValidate(env *models.Env, next http.Handler) http.Handler {
+func APIValidate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		authorizationHeader := req.Header.Get("authorization")
 		if authorizationHeader == "" {
@@ -23,16 +26,22 @@ func APIValidate(env *models.Env, next http.Handler) http.Handler {
 		if len(bearerToken) == 2 {
 			authToken := bearerToken[1]
 
-			user, err := env.Db.GetUserFromAuthToken(authToken)
+			sqlService := getSQLService(req)
+
+			user, err := sqlService.GetUserFromAuthToken(authToken)
 
 			if err != nil {
 				json.NewEncoder(w).Encode(models.Exception{Message: "Invalid auth token"})
 				return
 			}
 
-			ctx := context.WithValue(req.Context(), env.ContextKey, user)
+			ctx := context.WithValue(req.Context(), UserContextKey, user)
 
 			next.ServeHTTP(w, req.WithContext(ctx))
 		}
 	})
+}
+
+func getSQLService(r *http.Request) *services.SQL {
+	return r.Context().Value(SQLServiceKey).(*services.SQL)
 }

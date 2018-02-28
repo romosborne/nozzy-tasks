@@ -5,23 +5,22 @@ import (
 	"strings"
 
 	"github.com/romosborne/nozzy-tasks/middleware"
-	"github.com/romosborne/nozzy-tasks/models"
 
 	"github.com/gorilla/mux"
 )
 
 // NewRouter creates a router using the routes defined in Routes
-func NewRouter(env *models.Env) *mux.Router {
+func NewRouter() *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("static/"))))
 
 	for _, route := range routes {
 		var handler http.Handler
-		handler = route.HandlerFunc(env)
+		handler = route.HandlerFunc
 
 		if strings.Contains(route.Pattern, "/api/") {
-			handler = middleware.APIValidate(env, handler)
+			handler = middleware.APIValidate(handler)
 		}
 
 		handler = middleware.Logger(handler, route.Name)

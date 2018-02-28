@@ -2,8 +2,6 @@ package main
 
 import (
 	"net/http"
-
-	"github.com/romosborne/nozzy-tasks/models"
 )
 
 // A Route is a http route
@@ -11,7 +9,7 @@ type Route struct {
 	Name        string
 	Method      string
 	Pattern     string
-	HandlerFunc func(*models.Env) http.HandlerFunc
+	HandlerFunc http.HandlerFunc
 }
 
 // Routes is a collection os routes
