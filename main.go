@@ -1,10 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -15,7 +12,8 @@ import (
 )
 
 var (
-	bindAddress string
+	bindAddress   string
+	oauthClientID string
 )
 
 const (
@@ -24,32 +22,27 @@ const (
 
 func init() {
 	flag.StringVar(&bindAddress, "bind", ":8082", "Specify the ip and port to listen on")
+	flag.StringVar(&oauthClientID, "oauth-id", "", "Specify your oauth2 client id")
 }
 
 func main() {
 	flag.Parse()
+
+	if oauthClientID == "" {
+		log.Println("Please specify your oauth2 client id")
+		os.Exit(1)
+	}
 
 	db, err := models.NewDB(databaseName)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	env := &models.Env{}
-
-	file, err := ioutil.ReadFile("./creds.json")
-	if err != nil {
-		fmt.Printf("File error: %v\n", err)
-		os.Exit(1)
+	env := &models.Env{
+		OauthClientID: oauthClientID,
+		Db:            db,
+		SessionKey:    []byte(RandToken(64)),
 	}
-
-	err = json.Unmarshal(file, &env)
-	if err != nil {
-		fmt.Printf("File parse error: %v\n", err)
-		os.Exit(1)
-	}
-
-	env.Db = db
-	env.SessionKey = []byte(RandToken(64))
 
 	router := NewRouter(env)
 
