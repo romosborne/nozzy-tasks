@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,11 +14,20 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var (
+	bindAddress string
+)
+
 const (
 	databaseName = "./tasks.db"
 )
 
+func init() {
+	flag.StringVar(&bindAddress, "bind", ":8082", "Specify the ip and port to listen on")
+}
+
 func main() {
+	flag.Parse()
 
 	db, err := models.NewDB(databaseName)
 	if err != nil {
@@ -43,5 +53,6 @@ func main() {
 
 	router := NewRouter(env)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Println("Binding on", bindAddress)
+	log.Fatal(http.ListenAndServe(bindAddress, router))
 }
