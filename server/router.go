@@ -1,8 +1,10 @@
-package main
+package server
 
 import (
 	"net/http"
 	"strings"
+
+	"github.com/romosborne/nozzy-tasks/services"
 
 	"github.com/romosborne/nozzy-tasks/middleware"
 
@@ -10,7 +12,7 @@ import (
 )
 
 // NewRouter creates a router using the routes defined in Routes
-func NewRouter() *mux.Router {
+func NewRouter(sql *services.SQL, oauthClientID string) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("static/"))))
@@ -24,6 +26,7 @@ func NewRouter() *mux.Router {
 		}
 
 		handler = middleware.Logger(handler, route.Name)
+		handler = middleware.AddContext(handler, sql, oauthClientID)
 
 		router.
 			Methods(route.Method).

@@ -1,14 +1,13 @@
 package main
 
 import (
-<<<<<<< HEAD
-=======
 	"flag"
->>>>>>> master
 	"log"
 	"net/http"
+	"os"
 
-	"github.com/romosborne/nozzy-tasks/models"
+	"github.com/romosborne/nozzy-tasks/server"
+	"github.com/romosborne/nozzy-tasks/services"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -27,9 +26,6 @@ func init() {
 	flag.StringVar(&oauthClientID, "oauth-id", "", "Specify your oauth2 client id")
 }
 
-<<<<<<< HEAD
-	router := NewRouter()
-=======
 func main() {
 	flag.Parse()
 
@@ -38,20 +34,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	db, err := models.NewDB(databaseName)
+	sql, err := services.NewSQL(databaseName)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	env := &models.Env{
-		OauthClientID: oauthClientID,
-		Db:            db,
-		SessionKey:    []byte(RandToken(64)),
-	}
-
-	router := NewRouter(env)
->>>>>>> master
+	server := server.NewRouter(sql, oauthClientID)
 
 	log.Println("Binding on", bindAddress)
-	log.Fatal(http.ListenAndServe(bindAddress, router))
+	log.Fatal(http.ListenAndServe(bindAddress, server))
 }
