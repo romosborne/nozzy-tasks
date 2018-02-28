@@ -11,6 +11,8 @@
         <link href="/static/css/site.css" rel="stylesheet">
         <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
         <script src="/static/js/bootstrap-typeahead.js"></script>
+
+        <title>Nozzy Tasks</title>
     </head>
 
     <body>
@@ -21,12 +23,11 @@
             <div class="row">
                 <div class="col-md-8 col-offset-md-2">
                     <div data-bind="foreach: projects">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <h3 class="panel-title" data-bind="text: name"></h3>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 data-bind="text: name"></h3>
                             </div>
-                            <div class="panel-body">
-                                <ul class="list-group list-group-flush">
+                                <ul class="list-group">
                                     <div data-bind="foreach: tasks">
                                         <li class="list-group-item">
                                             <div class="form-check">
@@ -45,7 +46,6 @@
                                         </div>
                                     </li>
                                 </ul>
-                            </div>
                         </div>
                     </div>
                     <div>
