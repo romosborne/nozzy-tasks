@@ -26,7 +26,7 @@ var routes = Routes{
 		"ApiAuth",
 		"GET",
 		"/get_token",
-		ApiAuth,
+		APIAuth,
 	},
 	Route{
 		"TaskIndex",
@@ -39,6 +39,12 @@ var routes = Routes{
 		"GET",
 		"/api/tasks/{taskId}",
 		TaskShow,
+	},
+	Route{
+		"TaskDelete",
+		"DELETE",
+		"/api/tasks/{taskId}",
+		TaskDelete,
 	},
 	Route{
 		"TaskCreate",

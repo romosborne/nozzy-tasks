@@ -50,8 +50,8 @@ func Web(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, clientID)
 }
 
-// ApiAuth takes a google jwt, validates it, and returns a authtoken for the user
-func ApiAuth(w http.ResponseWriter, r *http.Request) {
+// APIAuth takes a google jwt, validates it, and returns a authtoken for the user
+func APIAuth(w http.ResponseWriter, r *http.Request) {
 	authorizationHeader := r.Header.Get("authorization")
 	if authorizationHeader == "" {
 		json.NewEncoder(w).Encode(models.Exception{Message: "An authorization header is required"})
@@ -107,6 +107,30 @@ func TaskShow(w http.ResponseWriter, r *http.Request) {
 	sqlService := getSQLService(r)
 	task, _ := sqlService.SingleTask(id, userID)
 	json.NewEncoder(w).Encode(task)
+}
+
+// TaskDelete handles delete task requests
+func TaskDelete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-type", "application/json; charset=UTF-8")
+
+	vars := mux.Vars(r)
+	taskID := vars["taskId"]
+	id, err := strconv.ParseInt(taskID, 10, 64)
+	if err != nil {
+		fmt.Fprint(w, err)
+		return
+	}
+
+	userID := getUser(r).ID
+
+	sqlService := getSQLService(r)
+	err = sqlService.DeleteTask(id, userID)
+	if err != nil {
+		fmt.Fprint(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
 
 // TaskCreate creates a task
@@ -167,6 +191,7 @@ func TaskCreate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// TaskComplete handles task completion requests
 func TaskComplete(w http.ResponseWriter, r *http.Request) {
 	var tcr models.TaskCompletionRequest
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1024*1024))

@@ -133,6 +133,22 @@ func (sql *SQL) SingleTask(taskID int64, userID int64) (*models.Task, error) {
 	return task, nil
 }
 
+// DeleteTask deletes a task
+func (sql *SQL) DeleteTask(taskID int64, userID int64) error {
+	stmt := `delete from tasks 
+	where exists (
+		select t.id from tasks t
+		join projects p on p.id = t.project
+		where t.id = ?
+		and p.userId = ?)
+	and id = ?`
+
+	sql.DB.Prepare(stmt)
+	_, err := sql.DB.Exec(stmt, taskID, userID, taskID)
+
+	return err
+}
+
 func (sql *SQL) SetTaskCompletion(userID int64, taskID int64, complete bool) error {
 	stmt := `update tasks set completed = ? 
 	where exists (
