@@ -66,6 +66,7 @@ func APIAuth(w http.ResponseWriter, r *http.Request) {
 			getOauthClientID(r),
 		})
 		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(models.Exception{Message: "Invalid authorization token"})
 			return
 		}

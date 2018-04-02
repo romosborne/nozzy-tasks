@@ -1,7 +1,9 @@
 package server
 
 import (
+	"log"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/romosborne/nozzy-tasks/services"
@@ -14,6 +16,14 @@ import (
 // NewRouter creates a router using the routes defined in Routes
 func NewRouter(sql *services.SQL, oauthClientID string) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
+
+	router.Methods("GET").
+		Path("/favicon.ico").
+		Name("favicon").
+		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log.Println("Hey")
+			http.ServeFile(w, r, path.Join("static", "img", "favicon.ico"))
+		})
 
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("static/"))))
 

@@ -3,24 +3,48 @@ function init() {
 
 var savedAuthKey = "";
 var viewModel;
+var gu;
 
 function LoadProjects() {
     var projects = $.Deferred();
 
-    $.ajax({
-        url: '/api/tasks',
-        headers: { 'Authorization': 'Bearer: ' + savedAuthKey },
-        dataType: 'JSON',
-        success: function (data) {
-            projects.resolve(data);
-        }
-    });
+    callApi(
+        {
+            url: '/api/tasks',
+            headers: { 'Authorization': 'Bearer: ' + savedAuthKey },
+            dataType: 'JSON',
+            success: function (data) {
+                projects.resolve(data);
+            }
+        });
 
     return projects.promise();
 }
 
 function onSignIn(googleUser) {
-    var id_token = googleUser.getAuthResponse().id_token;
+    gu = googleUser;
+    refreshAccessToken().done(function(){
+        LoadProjects().done(function (projects) {
+            console.log(projects);
+            proj = $.map(projects, function (p) {
+                tasks = $.map(p.tasks, function (t) {
+                    return new Task(t.id, t.title, t.completed)
+                })
+                return new Project(p.id, p.name, tasks)
+            });
+
+            $.each(proj, function (i, v) {
+                viewModel.addExistingProject(v);
+            });
+
+            viewModel.signedIn(true);
+        });
+    });
+}
+
+function refreshAccessToken() {
+    var prom = $.Deferred();
+    var id_token = gu.getAuthResponse().id_token;
     console.log("ID Token: " + id_token);
 
     $.ajax({
@@ -28,23 +52,26 @@ function onSignIn(googleUser) {
         headers: { 'Authorization': 'Bearer: ' + id_token },
         success: function (authKey) {
             savedAuthKey = authKey;
-            LoadProjects().done(function (projects) {
-                console.log(projects);
-                proj = $.map(projects, function (p) {
-                    tasks = $.map(p.tasks, function (t) {
-                        return new Task(t.id, t.title, t.completed)
-                    })
-                    return new Project(p.id, p.name, tasks)
-                });
-
-                $.each(proj, function (i, v) {
-                    viewModel.addExistingProject(v);
-                });
-
-                viewModel.signedIn(true);
-            });
+            prom.resolve();
         }
     });
+
+    return prom.promise()
+}
+
+function callApi(request){
+    console.log("Beep");
+    request.headers = {'Authorization': 'Bearer: ' + savedAuthKey };
+    if (!request.statusCode){
+        request.statusCode = {};
+    }
+
+    request.statusCode[401] = function(){
+        refreshAccessToken().done(function() {
+            callApi(request);
+        });
+    }
+    $.ajax(request);
 }
 
 $(function () {
@@ -59,17 +86,15 @@ var Task = function (id, title, completed) {
     self.completed = ko.observable(completed)
 
     self.toggleComplete = function () {
-        let request = {
-            "task_id": self.id,
-            "completed": self.completed()
-        }
-
-        $.ajax({
+        callApi({
             url: '/api/tasks/completion',
             method: 'POST',
-            headers: { 'Authorization': 'Bearer: ' + savedAuthKey },
-            data: JSON.stringify(request)
+            data: JSON.stringify({
+                "task_id": self.id,
+                "completed": self.completed()
+            })
         });
+
         return true;
     }
 }
@@ -91,16 +116,13 @@ var Project = function (id, name, tasks) {
     };
 
     self.addTaskInline = function () {
-        var request = {
-            "title": self.newTaskName(),
-            "project_id": self.id
-        }
-
-        $.ajax({
+        callApi({
             url: '/api/tasks',
             method: 'POST',
-            headers: { 'Authorization': 'Bearer: ' + savedAuthKey },
-            data: JSON.stringify(request),
+            data: JSON.stringify({
+                "title": self.newTaskName(),
+                "project_id": self.id
+            }),
             success: function (response) {
                 self.tasks.push(new Task(response.id, response.title, false));
                 self.newTaskName("");
@@ -109,10 +131,9 @@ var Project = function (id, name, tasks) {
     }
 
     self.deleteTask = function (task) {
-        $.ajax({
+        callApi({
             url: '/api/tasks/' + task.id,
             method: 'DELETE',
-            headers: { 'Authorization': 'Bearer: ' + savedAuthKey }
         })
 
         self.tasks.remove(task);
@@ -135,13 +156,10 @@ function ProjectsViewModel(projects) {
     };
 
     self.addProject = function () {
-        var request = { "name": self.newProjectName() };
-        console.log(request);
-        $.ajax({
+        callApi({
             url: '/api/project',
             method: 'POST',
-            headers: { 'Authorization': 'Bearer: ' + savedAuthKey },
-            data: JSON.stringify(request),
+            data: JSON.stringify({ "name": self.newProjectName() }),
             success: function (response) {
                 console.log(response);
                 self.projects.push(new Project(response.id, response.name, []));
