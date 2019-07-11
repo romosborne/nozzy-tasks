@@ -1,11 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/romosborne/nozzy-tasks/models"
 	"github.com/romosborne/nozzy-tasks/server"
 	"github.com/romosborne/nozzy-tasks/services"
 
@@ -18,7 +21,7 @@ var (
 )
 
 const (
-	databaseName = "./tasks.db"
+	databaseName = "/config/tasks.db"
 )
 
 func init() {
@@ -27,20 +30,23 @@ func init() {
 }
 
 func main() {
-	flag.Parse()
+	var config models.Config
 
-	if oauthClientID == "" {
-		log.Println("Please specify your oauth2 client id")
+	configFile, err := ioutil.ReadFile("/config/config.json")
+	if err != nil {
+		log.Println("Error opening config file")
 		os.Exit(1)
 	}
+
+	_ = json.Unmarshal([]byte(configFile), &config)
 
 	sql, err := services.NewSQL(databaseName)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	server := server.NewRouter(sql, oauthClientID)
+	server := server.NewRouter(sql, config.Cid)
 
-	log.Println("Binding on", bindAddress)
-	log.Fatal(http.ListenAndServe(bindAddress, server))
+	log.Println("Binding on", config.Port)
+	log.Fatal(http.ListenAndServe(config.Port, server))
 }
