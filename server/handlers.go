@@ -263,6 +263,29 @@ func ProjectCreate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ProjectDelete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-type", "application/json; charset=UTF-8")
+
+	vars := mux.Vars(r)
+	projectID := vars["projectId"]
+	id, err := strconv.ParseInt(projectID, 10, 64)
+	if err != nil {
+		fmt.Fprint(w, err)
+		return
+	}
+
+	userID := getUser(r).ID
+
+	sqlService := getSQLService(r)
+	err = sqlService.DeleteProject(id, userID)
+	if err != nil {
+		fmt.Fprint(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+}
+
 func getUser(r *http.Request) *models.User {
 	return r.Context().Value(middleware.UserContextKey).(*models.User)
 }

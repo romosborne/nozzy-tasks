@@ -22,8 +22,10 @@ type Datastore interface {
 	AllTasks(userID int64) ([]*models.Project, error)
 	SingleTask(taskID int64, userID int64) (*models.Task, error)
 	CreateTask(task *models.Task) error
+	DeleteTask(taskID int64, userID int64) error
 	SetTaskCompletion(userID int64, taskID int64, complete bool) error
 	CreateProject(project *models.Project) error
+	DeleteProject(projectID int64, userID int64) error
 	AddUser(user *models.User)
 	CreateOrSetAuthToken(sub string, email string, authToken string)
 	GetUserFromAuthToken(authToken string) (*models.User, error)
@@ -220,6 +222,20 @@ func (sql *SQL) CreateProject(project *models.Project) error {
 	project.ID = id
 
 	return nil
+}
+
+// DeleteProject deletes a project
+func (sql *SQL) DeleteProject(projectID int64, userID int64) error {
+	stmt := `delete from tasks 
+	where t.project = ?
+	and id = ?;
+	delete from projects
+		where id = ?`
+
+	sql.DB.Prepare(stmt)
+	_, err := sql.DB.Exec(stmt, projectIdID, userID, projectID)
+
+	return err
 }
 
 // AddUser adds a user to the database

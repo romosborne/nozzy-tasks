@@ -64,4 +64,10 @@ var routes = Routes{
 		"/api/project",
 		ProjectCreate,
 	},
+	Route{
+		"ProjectDelete",
+		"DELETE",
+		"/api/project{projectId}",
+		ProjectDelete,
+	},
 }
